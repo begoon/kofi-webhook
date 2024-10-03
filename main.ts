@@ -75,6 +75,26 @@ async function store(event: Record<string, unknown>) {
     });
 }
 
+async function check(email: string) {
+    console.log("check", { email });
+    const existing = await emails();
+    return existing.includes(email);
+}
+
+async function emails() {
+    console.log("emails");
+    const response = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: "payments!C:C",
+    });
+
+    const values = response.data.values?.map((v) => v[0]) ?? [];
+    if (values.at(0) === "email") values.shift();
+
+    const unique = [...new Set(values)];
+    console.log({ emails: unique });
+    return unique;
+}
 
 const port = Number(env.PORT) || 8000;
 
@@ -109,6 +129,20 @@ Deno.serve(
         if (method === "GET" && url.pathname === "/self") {
             await store(JSON.parse(TEST_DATA));
             return Response.json({ status: "self" });
+        }
+        if (method === "GET" && url.pathname.startsWith("/exist")) {
+            const RE = new URLPattern({ pathname: "/exist/:email" });
+            const match = RE.exec(req.url)
+            if (match) {
+                const email = match.pathname.groups.email;
+                if (!email) return Response.json({ error: "email?" }, { status: 400 });
+
+                const exist = await check(email);
+                return new Response("", { status: exist ? 200 : 404 });
+            } else {
+                const all = await emails();
+                return Response.json({ emails: all });
+            }
         }
         if (method === "POST" && url.pathname === "/webhook") {
             const text = await req.text();
