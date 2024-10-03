@@ -1,0 +1,6 @@
+{
+    "version": "0.0.0",
+    "imports": {
+        "googleapis": "npm:googleapis@144.0.0"
+    }
+}
