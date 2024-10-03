@@ -113,6 +113,13 @@ function cut(v: string) {
     return v.slice(0, 4) + ".." + v.slice(-4);
 }
 
+function cors(response: Response) {
+    response.headers.set("Access-Control-Allow-Origin", "*");
+    response.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    response.headers.set("Access-Control-Allow-Headers", "Content-Type");
+    return response;
+}
+
 Deno.serve(
     { port, onListen: () => console.log("listening on port", port) },
     async (req) => {
@@ -138,7 +145,7 @@ Deno.serve(
                 if (!email) return Response.json({ error: "email?" }, { status: 400 });
 
                 const exist = await check(email);
-                return new Response("", { status: exist ? 200 : 404 });
+                return cors(new Response("", { status: exist ? 200 : 404 }));
             } else {
                 const all = await emails();
                 return Response.json({ emails: all });
