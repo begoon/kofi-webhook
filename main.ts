@@ -10,7 +10,7 @@ if (!GOOGLE_CREDENTIALS) throw new Error("GOOGLE_CREDENTIALS not set");
 const credentials = JSON.parse(atob(GOOGLE_CREDENTIALS));
 
 const { private_key_id } = credentials;
-console.log("±", private_key_id.slice(0, 4) + ".." + private_key_id.slice(-4));
+console.log("±", cut(private_key_id));
 
 const oauth2Client = new google.auth.GoogleAuth({
     credentials: credentials,
@@ -89,6 +89,10 @@ async function webhook(text: string) {
     await store(event);
 }
 
+function cut(v: string) {
+    return v.slice(0, 4) + ".." + v.slice(-4);
+}
+
 Deno.serve(
     { port, onListen: () => console.log("listening on port", port) },
     async (req) => {
@@ -96,7 +100,11 @@ Deno.serve(
         const method = req.method;
         console.log(method, url.pathname);
         if (method === "GET" && url.pathname === "/health") {
-            return Response.json({ version });
+            return Response.json({
+                version,
+                sheets: cut(SPREADSHEET_ID),
+                me: cut(private_key_id)
+            });
         }
         if (method === "GET" && url.pathname === "/self") {
             await store(JSON.parse(TEST_DATA));
