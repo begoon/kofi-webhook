@@ -73,6 +73,18 @@ async function store(event: Record<string, unknown>) {
         valueInputOption: "RAW",
         requestBody: { values },
     });
+
+    const msg = [
+        `<${event.url}|платеж>`,
+        event.email,
+        event.from_name,
+        `*${event.amount}*`,
+        event.currency,
+        (event.timestamp as string).replace("T" , " ").replace("Z", ""),
+    ].join(" ");
+    
+    console.log(msg);
+    await slack(msg);
 }
 
 async function check(email: string) {
@@ -119,6 +131,26 @@ function cors(response: Response) {
     response.headers.set("Access-Control-Allow-Headers", "Content-Type");
     return response;
 }
+
+// ---
+
+const SLACK_SERVICE = "https://hooks.slack.com/services/";
+
+const { SLACK_SECRET } = env;
+if (!SLACK_SECRET) throw new Error("missing SLACK_SECRET");
+
+// const msg = `<${pdf}|карта> пользователя *${name}* сохранена (${size} байт, ${seconds} секунд)`;
+
+export async function slack(text: string) {
+    const response = await fetch(SLACK_SERVICE + SLACK_SECRET, {
+        method: "POST",
+        headers: { "Content-type": "application/json" },
+        body: JSON.stringify({ text }),
+    });
+    return response;
+}
+
+// ---
 
 Deno.serve(
     { port, onListen: () => console.log("listening on port", port) },
